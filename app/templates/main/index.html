@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Crop Disease Detection{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">AI-Powered Crop Disease Detection</h1>
+            <p class="hero-subtitle">
+                Protect your crops with advanced AI technology. Upload an image and get instant disease diagnosis with treatment recommendations.
+            </p>
+            
+            <div class="hero-buttons">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('scanner.index') }}" class="btn btn-primary btn-large">Start Scanning</a>
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline btn-large">View Dashboard</a>
+                {% else %}
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-large">Get Started</a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-large">Login</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="hero-image">
+            <div class="hero-card">
+                <span class="hero-icon">🌱</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features">
+    <div class="container">
+        <h2 class="section-title">Why Choose CropCare AI?</h2>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>Accurate Detection</h3>
+                <p>Advanced AI algorithms detect crop diseases with high accuracy and confidence scores.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Instant Results</h3>
+                <p>Get disease diagnosis and treatment recommendations in seconds.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">💊</div>
+                <h3>Treatment Plans</h3>
+                <p>Receive detailed treatment steps, prevention methods, and fertilizer recommendations.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Track History</h3>
+                <p>Monitor your scans over time and identify patterns in crop health.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Mobile Friendly</h3>
+                <p>Access from any device - desktop, tablet, or smartphone.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Secure & Private</h3>
+                <p>Your data is encrypted and stored securely with complete privacy.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="how-it-works">
+    <div class="container">
+        <h2 class="section-title">How It Works</h2>
+        
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Upload Image</h3>
+                <p>Take a photo of your crop or upload an existing image</p>
+            </div>
+            
+            <div class="step-arrow">→</div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>AI Analysis</h3>
+                <p>Our AI analyzes the image and detects any diseases</p>
+            </div>
+            
+            <div class="step-arrow">→</div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Get Results</h3>
+                <p>Receive detailed diagnosis and treatment recommendations</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta">
+    <div class="container">
+        <div class="cta-content">
+            <h2>Ready to Protect Your Crops?</h2>
+            <p>Join thousands of farmers using AI to maintain healthy crops</p>
+            
+            {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-large">Create Free Account</a>
+            {% else %}
+                <a href="{{ url_for('scanner.index') }}" class="btn btn-primary btn-large">Start Your First Scan</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

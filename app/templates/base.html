@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Powered Crop Disease Detection System">
+    <title>{% block title %}Crop Disease Detection{% endblock %}</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <a href="{{ url_for('main.index') }}">
+                    <span class="logo">🌾</span>
+                    <span class="brand-name">CropCare AI</span>
+                </a>
+            </div>
+            
+            <div class="nav-menu" id="navMenu">
+                <ul class="nav-links">
+                    <li><a href="{{ url_for('main.index') }}">Home</a></li>
+                    
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                        <li><a href="{{ url_for('scanner.index') }}">Scan</a></li>
+                        <li><a href="{{ url_for('scanner.history') }}">History</a></li>
+                        
+                        {% if current_user.is_admin %}
+                            <li><a href="{{ url_for('admin.index') }}">Admin</a></li>
+                        {% endif %}
+                        
+                        <li class="user-menu">
+                            <span class="username">{{ current_user.username }}</span>
+                            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Logout</a>
+                        </li>
+                    {% else %}
+                        <li><a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a></li>
+                        <li><a href="{{ url_for('auth.register') }}" class="btn btn-outline">Register</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <span>{{ message }}</span>
+                        <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>CropCare AI</h3>
+                    <p>AI-powered crop disease detection for modern farming</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="{{ url_for('main.index') }}">Home</a></li>
+                        <li><a href="{{ url_for('main.about') }}">About</a></li>
+                        <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">API</a></li>
+                        <li><a href="#">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 CropCare AI. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

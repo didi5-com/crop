@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Disease Database - Admin{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <h1>Disease Database</h1>
+            <a href="{{ url_for('admin.index') }}" class="btn btn-outline">Back to Admin</a>
+        </div>
+        
+        {% if diseases.items %}
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Crop</th>
+                            <th>Disease</th>
+                            <th>Symptoms</th>
+                            <th>Treatment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for disease in diseases.items %}
+                        <tr>
+                            <td>{{ disease.id }}</td>
+                            <td>{{ disease.crop_name }}</td>
+                            <td>{{ disease.disease_name }}</td>
+                            <td>{{ disease.symptoms[:100] }}...</td>
+                            <td>{{ disease.treatment[:100] }}...</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if diseases.pages > 1 %}
+            <div class="pagination">
+                {% if diseases.has_prev %}
+                    <a href="{{ url_for('admin.diseases', page=diseases.prev_num) }}" class="btn btn-outline">Previous</a>
+                {% endif %}
+                
+                <span class="page-info">Page {{ diseases.page }} of {{ diseases.pages }}</span>
+                
+                {% if diseases.has_next %}
+                    <a href="{{ url_for('admin.diseases', page=diseases.next_num) }}" class="btn btn-outline">Next</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <p>No disease records found</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

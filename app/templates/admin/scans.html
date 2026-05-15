@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}All Scans - Admin{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <h1>All Scans</h1>
+            <a href="{{ url_for('admin.index') }}" class="btn btn-outline">Back to Admin</a>
+        </div>
+        
+        {% if scans.items %}
+            <div class="history-grid">
+                {% for scan in scans.items %}
+                <div class="history-card">
+                    <div class="history-image">
+                        <img src="{{ url_for('static', filename=scan.image_path) }}" alt="{{ scan.crop_name }}">
+                    </div>
+                    
+                    <div class="history-info">
+                        <h3>{{ scan.crop_name }}</h3>
+                        <p class="disease-name">{{ scan.disease_name }}</p>
+                        <p class="scan-user">User: {{ scan.user.username }}</p>
+                        
+                        <div class="history-meta">
+                            <span class="confidence">{{ "%.1f"|format(scan.confidence) }}%</span>
+                            <span class="date">{{ scan.timestamp.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        
+                        <a href="{{ url_for('scanner.result', scan_id=scan.id) }}" class="btn btn-sm btn-primary">View Details</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if scans.pages > 1 %}
+            <div class="pagination">
+                {% if scans.has_prev %}
+                    <a href="{{ url_for('admin.scans', page=scans.prev_num) }}" class="btn btn-outline">Previous</a>
+                {% endif %}
+                
+                <span class="page-info">Page {{ scans.page }} of {{ scans.pages }}</span>
+                
+                {% if scans.has_next %}
+                    <a href="{{ url_for('admin.scans', page=scans.next_num) }}" class="btn btn-outline">Next</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <p>No scans found</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.history-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.history-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.history-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.history-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.history-info {
+    padding: 1.5rem;
+}
+
+.history-info h3 {
+    margin-bottom: 0.5rem;
+    color: var(--text-dark);
+}
+
+.disease-name {
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+}
+
+.scan-user {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+.history-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.confidence {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+</style>
+{% endblock %}

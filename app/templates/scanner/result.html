@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Result - Crop Disease Detection{% endblock %}
+
+{% block content %}
+<section class="result-section">
+    <div class="container">
+        <div class="result-header">
+            <h1>Scan Results</h1>
+            <p>Analysis completed on {{ scan.timestamp.strftime('%B %d, %Y at %I:%M %p') }}</p>
+        </div>
+        
+        <div class="result-grid">
+            <!-- Image Display -->
+            <div class="result-image-card">
+                <img src="{{ url_for('static', filename=scan.image_path) }}" alt="Scanned crop image">
+            </div>
+            
+            <!-- Detection Results -->
+            <div class="result-info-card">
+                <div class="result-badge">
+                    <span class="badge {% if scan.disease_name == 'No Disease Detected' %}badge-success{% else %}badge-warning{% endif %}">
+                        {{ scan.disease_name }}
+                    </span>
+                </div>
+                
+                <h2>{{ scan.crop_name }}</h2>
+                
+                <div class="confidence-meter">
+                    <div class="confidence-label">
+                        <span>Confidence</span>
+                        <span class="confidence-value">{{ "%.1f"|format(scan.confidence) }}%</span>
+                    </div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: {{ scan.confidence }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Detailed Information -->
+        <div class="details-grid">
+            {% if scan.symptoms %}
+            <div class="detail-card">
+                <div class="detail-icon">🔍</div>
+                <h3>Symptoms</h3>
+                <p>{{ scan.symptoms }}</p>
+            </div>
+            {% endif %}
+            
+            {% if scan.causes %}
+            <div class="detail-card">
+                <div class="detail-icon">⚠️</div>
+                <h3>Causes</h3>
+                <p>{{ scan.causes }}</p>
+            </div>
+            {% endif %}
+            
+            {% if scan.treatment %}
+            <div class="detail-card">
+                <div class="detail-icon">💊</div>
+                <h3>Treatment</h3>
+                <p>{{ scan.treatment }}</p>
+            </div>
+            {% endif %}
+            
+            {% if scan.prevention %}
+            <div class="detail-card">
+                <div class="detail-icon">🛡️</div>
+                <h3>Prevention</h3>
+                <p>{{ scan.prevention }}</p>
+            </div>
+            {% endif %}
+            
+            {% if scan.fertilizers %}
+            <div class="detail-card">
+                <div class="detail-icon">🌱</div>
+                <h3>Recommended Fertilizers</h3>
+                <p>{{ scan.fertilizers }}</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="result-actions">
+            <a href="{{ url_for('scanner.index') }}" class="btn btn-primary">Scan Another Image</a>
+            <a href="{{ url_for('scanner.history') }}" class="btn btn-outline">View History</a>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline">Go to Dashboard</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

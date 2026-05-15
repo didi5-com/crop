@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Admin{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <h1>Manage Users</h1>
+            <a href="{{ url_for('admin.index') }}" class="btn btn-outline">Back to Admin</a>
+        </div>
+        
+        {% if users.items %}
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Admin</th>
+                            <th>Scans</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users.items %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{% if user.is_admin %}✅{% else %}❌{% endif %}</td>
+                            <td>{{ user.get_scan_count() }}</td>
+                            <td>{{ user.created_at.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin.toggle_admin', user_id=user.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline">
+                                        {% if user.is_admin %}Revoke Admin{% else %}Make Admin{% endif %}
+                                    </button>
+                                </form>
+                                
+                                <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" style="display: inline;" onsubmit="return confirm('Delete this user?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if users.pages > 1 %}
+            <div class="pagination">
+                {% if users.has_prev %}
+                    <a href="{{ url_for('admin.users', page=users.prev_num) }}" class="btn btn-outline">Previous</a>
+                {% endif %}
+                
+                <span class="page-info">Page {{ users.page }} of {{ users.pages }}</span>
+                
+                {% if users.has_next %}
+                    <a href="{{ url_for('admin.users', page=users.next_num) }}" class="btn btn-outline">Next</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <p>No users found</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.admin-table-container {
+    background: var(--bg-white);
+    border-radius: var(--radius-md);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+    margin-bottom: 2rem;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.admin-table th {
+    background: var(--bg-light);
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.admin-table tr:hover {
+    background: var(--bg-light);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-info {
+    color: var(--text-light);
+}
+</style>
+{% endblock %}

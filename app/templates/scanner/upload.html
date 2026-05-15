@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Crop - Crop Disease Detection{% endblock %}
+
+{% block content %}
+<section class="scanner-section">
+    <div class="container">
+        <div class="scanner-header">
+            <h1>Crop Disease Scanner</h1>
+            <p>Upload an image of your crop to detect diseases and get treatment recommendations</p>
+        </div>
+        
+        <!-- API Status Notice -->
+        <div class="api-notice">
+            <div class="notice-icon">ℹ️</div>
+            <div class="notice-content">
+                <strong>Detection Mode:</strong> 
+                {% if config.PLANT_ID_API_KEY %}
+                    <span class="status-active">✅ Real AI Detection Active (Plant.id API)</span>
+                    <p>You're using accurate, real-time crop disease detection!</p>
+                {% else %}
+                    <span class="status-demo">⚠️ Demo Mode (Mock Detection)</span>
+                    <p>For real disease detection, <a href="/static/API_SETUP_GUIDE.md" target="_blank">get a FREE API key</a> (takes 5 minutes)</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="upload-card">
+            <form id="uploadForm" method="POST" action="{{ url_for('scanner.upload') }}" enctype="multipart/form-data">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📷</div>
+                    <h3>Drag & Drop Image Here</h3>
+                    <p>or click to browse</p>
+                    <input type="file" name="image" id="imageInput" accept="image/*" required hidden>
+                    <button type="button" class="btn btn-outline" onclick="document.getElementById('imageInput').click()">
+                        Choose Image
+                    </button>
+                </div>
+                
+                <div class="preview-area" id="previewArea" style="display: none;">
+                    <img id="imagePreview" src="" alt="Preview">
+                    <div class="preview-actions">
+                        <button type="button" class="btn btn-outline" onclick="resetUpload()">Change Image</button>
+                        <button type="submit" class="btn btn-primary" id="analyzeBtn">
+                            <span class="btn-text">Analyze Image</span>
+                            <span class="btn-loader" style="display: none;">
+                                <span class="spinner"></span> Analyzing...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="upload-tips">
+            <h3>Tips for Best Results</h3>
+            <ul>
+                <li>📸 Take clear, well-lit photos</li>
+                <li>🎯 Focus on affected areas</li>
+                <li>📏 Capture close-up details</li>
+                <li>🌿 Include leaves and stems</li>
+                <li>☀️ Avoid shadows and glare</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<script>
+// Image upload and preview functionality
+const uploadArea = document.getElementById('uploadArea');
+const previewArea = document.getElementById('previewArea');
+const imageInput = document.getElementById('imageInput');
+const imagePreview = document.getElementById('imagePreview');
+const uploadForm = document.getElementById('uploadForm');
+const analyzeBtn = document.getElementById('analyzeBtn');
+
+// Drag and drop handlers
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('drag-over');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('drag-over');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('drag-over');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        imageInput.files = files;
+        handleImageSelect();
+    }
+});
+
+// Click to upload
+uploadArea.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') {
+        imageInput.click();
+    }
+});
+
+// File input change
+imageInput.addEventListener('change', handleImageSelect);
+
+function handleImageSelect() {
+    const file = imageInput.files[0];
+    
+    if (file) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select a valid image file');
+            return;
+        }
+        
+        // Validate file size (16MB max)
+        if (file.size > 16 * 1024 * 1024) {
+            alert('Image size must be less than 16MB');
+            return;
+        }
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagePreview.src = e.target.result;
+            uploadArea.style.display = 'none';
+            previewArea.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function resetUpload() {
+    imageInput.value = '';
+    imagePreview.src = '';
+    uploadArea.style.display = 'flex';
+    previewArea.style.display = 'none';
+}
+
+// Form submission with loading state
+uploadForm.addEventListener('submit', (e) => {
+    const btnText = analyzeBtn.querySelector('.btn-text');
+    const btnLoader = analyzeBtn.querySelector('.btn-loader');
+    
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'inline-block';
+    analyzeBtn.disabled = true;
+});
+</script>
+{% endblock %}

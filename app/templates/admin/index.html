@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <h1>Admin Dashboard</h1>
+            <p>System overview and management</p>
+        </div>
+        
+        <!-- Admin Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-info">
+                    <h3>{{ total_users }}</h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <h3>{{ total_scans }}</h3>
+                    <p>Total Scans</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🦠</div>
+                <div class="stat-info">
+                    <h3>{{ total_diseases }}</h3>
+                    <p>Disease Records</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Links -->
+        <div class="admin-links">
+            <a href="{{ url_for('admin.users') }}" class="admin-link-card">
+                <div class="link-icon">👥</div>
+                <h3>Manage Users</h3>
+                <p>View and manage user accounts</p>
+            </a>
+            
+            <a href="{{ url_for('admin.scans') }}" class="admin-link-card">
+                <div class="link-icon">📷</div>
+                <h3>View All Scans</h3>
+                <p>Browse all system scans</p>
+            </a>
+            
+            <a href="{{ url_for('admin.diseases') }}" class="admin-link-card">
+                <div class="link-icon">🦠</div>
+                <h3>Disease Database</h3>
+                <p>Manage disease information</p>
+            </a>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="admin-section-card">
+            <h2>Recent Users</h2>
+            {% if recent_users %}
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Admin</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in recent_users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{% if user.is_admin %}✅{% else %}❌{% endif %}</td>
+                            <td>{{ user.created_at.strftime('%b %d, %Y') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

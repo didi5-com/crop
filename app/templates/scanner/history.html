@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Scan History - Crop Disease Detection{% endblock %}
+
+{% block content %}
+<section class="history-section">
+    <div class="container">
+        <div class="history-header">
+            <h1>Scan History</h1>
+            <p>View all your previous crop disease scans</p>
+        </div>
+        
+        {% if scans.items %}
+            <div class="history-grid">
+                {% for scan in scans.items %}
+                <div class="history-card">
+                    <div class="history-image">
+                        <img src="{{ url_for('static', filename=scan.image_path) }}" alt="{{ scan.crop_name }}">
+                        <div class="history-overlay">
+                            <a href="{{ url_for('scanner.result', scan_id=scan.id) }}" class="btn btn-sm btn-primary">View Details</a>
+                        </div>
+                    </div>
+                    
+                    <div class="history-info">
+                        <h3>{{ scan.crop_name }}</h3>
+                        <p class="disease-name">{{ scan.disease_name }}</p>
+                        
+                        <div class="history-meta">
+                            <span class="confidence">{{ "%.1f"|format(scan.confidence) }}% confidence</span>
+                            <span class="date">{{ scan.timestamp.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        
+                        <div class="history-actions">
+                            <a href="{{ url_for('scanner.result', scan_id=scan.id) }}" class="btn btn-sm btn-outline">View</a>
+                            <form method="POST" action="{{ url_for('scanner.delete_scan', scan_id=scan.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this scan?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if scans.pages > 1 %}
+            <div class="pagination">
+                {% if scans.has_prev %}
+                    <a href="{{ url_for('scanner.history', page=scans.prev_num) }}" class="btn btn-outline">Previous</a>
+                {% endif %}
+                
+                <span class="page-info">Page {{ scans.page }} of {{ scans.pages }}</span>
+                
+                {% if scans.has_next %}
+                    <a href="{{ url_for('scanner.history', page=scans.next_num) }}" class="btn btn-outline">Next</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <h2>No Scans Yet</h2>
+                <p>You haven't scanned any crops yet. Start by uploading your first image!</p>
+                <a href="{{ url_for('scanner.index') }}" class="btn btn-primary">Start Scanning</a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

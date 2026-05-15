@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Crop Disease Detection{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Welcome, {{ current_user.username }}!</h1>
+            <p>Here's an overview of your crop health monitoring</p>
+        </div>
+        
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <h3>{{ total_scans }}</h3>
+                    <p>Total Scans</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🌾</div>
+                <div class="stat-info">
+                    <h3>{{ crop_stats|length }}</h3>
+                    <p>Crops Monitored</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🔬</div>
+                <div class="stat-info">
+                    <h3>{{ disease_stats|length }}</h3>
+                    <p>Diseases Detected</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-info">
+                    <h3>{{ recent_scans|length }}</h3>
+                    <p>Recent Activity</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Scans -->
+        <div class="dashboard-section-card">
+            <div class="section-header">
+                <h2>Recent Scans</h2>
+                <a href="{{ url_for('scanner.history') }}" class="btn btn-sm btn-outline">View All</a>
+            </div>
+            
+            {% if recent_scans %}
+                <div class="recent-scans-list">
+                    {% for scan in recent_scans %}
+                    <div class="recent-scan-item">
+                        <div class="scan-image-thumb">
+                            <img src="{{ url_for('static', filename=scan.image_path) }}" alt="{{ scan.crop_name }}">
+                        </div>
+                        
+                        <div class="scan-details">
+                            <h4>{{ scan.crop_name }}</h4>
+                            <p class="scan-disease">{{ scan.disease_name }}</p>
+                            <span class="scan-date">{{ scan.timestamp.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        
+                        <div class="scan-confidence">
+                            <span class="confidence-badge">{{ "%.1f"|format(scan.confidence) }}%</span>
+                        </div>
+                        
+                        <div class="scan-action">
+                            <a href="{{ url_for('scanner.result', scan_id=scan.id) }}" class="btn btn-sm btn-primary">View</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state-small">
+                    <p>No scans yet. <a href="{{ url_for('scanner.index') }}">Start scanning</a></p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Statistics Charts -->
+        <div class="charts-grid">
+            <!-- Most Detected Diseases -->
+            <div class="chart-card">
+                <h3>Most Detected Diseases</h3>
+                {% if disease_stats %}
+                    <div class="chart-list">
+                        {% for disease, count in disease_stats %}
+                        <div class="chart-item">
+                            <span class="chart-label">{{ disease }}</span>
+                            <div class="chart-bar-container">
+                                <div class="chart-bar" style="width: {{ (count / disease_stats[0][1] * 100) }}%"></div>
+                            </div>
+                            <span class="chart-value">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="no-data">No data available</p>
+                {% endif %}
+            </div>
+            
+            <!-- Crop Statistics -->
+            <div class="chart-card">
+                <h3>Crops Scanned</h3>
+                {% if crop_stats %}
+                    <div class="chart-list">
+                        {% for crop, count in crop_stats %}
+                        <div class="chart-item">
+                            <span class="chart-label">{{ crop }}</span>
+                            <div class="chart-bar-container">
+                                <div class="chart-bar" style="width: {{ (count / crop_stats[0][1] * 100) }}%"></div>
+                            </div>
+                            <span class="chart-value">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="no-data">No data available</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h2>Quick Actions</h2>
+            <div class="actions-grid">
+                <a href="{{ url_for('scanner.index') }}" class="action-card">
+                    <div class="action-icon">📷</div>
+                    <h3>New Scan</h3>
+                    <p>Upload a new crop image</p>
+                </a>
+                
+                <a href="{{ url_for('scanner.history') }}" class="action-card">
+                    <div class="action-icon">📜</div>
+                    <h3>View History</h3>
+                    <p>See all your scans</p>
+                </a>
+                
+                <a href="{{ url_for('api.get_stats') }}" class="action-card">
+                    <div class="action-icon">📊</div>
+                    <h3>Export Data</h3>
+                    <p>Download your statistics</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
