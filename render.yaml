@@ -2,11 +2,12 @@ services:
   - type: web
     name: crop-disease-detection
     env: python
+    runtime: python
     region: oregon
     plan: free
     branch: main
     buildCommand: "bash build.sh"
-    startCommand: "gunicorn run:app"
+    startCommand: "gunicorn run:app --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
