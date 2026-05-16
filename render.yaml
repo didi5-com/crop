@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: crop-disease-detection
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn run:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        value: sqlite:///crop_disease.db
+      - key: PLANT_ID_API_KEY
+        sync: false
