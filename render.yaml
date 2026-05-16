@@ -15,7 +15,5 @@ services:
         generateValue: true
       - key: FLASK_ENV
         value: production
-      - key: DATABASE_URL
-        value: sqlite:///crop_disease.db
       - key: PLANT_ID_API_KEY
         sync: false
