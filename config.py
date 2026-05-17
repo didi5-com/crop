@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
+DEFAULT_SQLITE_PATH = os.path.join(INSTANCE_DIR, 'database.db')
+
 class Config:
     """Base configuration"""
     
@@ -15,7 +19,7 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     
     # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///crop_disease.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or ('sqlite:///' + DEFAULT_SQLITE_PATH)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Upload settings
@@ -56,7 +60,7 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Testing configuration"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///test_crop_disease.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(INSTANCE_DIR, 'test_crop_disease.db')
 
 
 # Configuration dictionary

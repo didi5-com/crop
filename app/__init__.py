@@ -11,21 +11,28 @@ from config import config
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-def create_app(config_name='development'):
+def create_app(config_name=None):
     """
     Application factory pattern
     
     Args:
-        config_name: Configuration environment (development, production, testing)
+        config_name: Optional configuration environment (development, production, testing)
     
     Returns:
         Flask application instance
     """
     app = Flask(__name__)
-    
+
+    # Resolve configuration from argument or environment
+    resolved_config = config_name or os.getenv('FLASK_ENV', 'development')
+
     # Load configuration
-    app.config.from_object(config[config_name])
+    app.config.from_object(config[resolved_config])
     
+    # Ensure instance folder exists for SQLite on Render/Linux
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    os.makedirs(os.path.join(project_root, 'instance'), exist_ok=True)
+
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
