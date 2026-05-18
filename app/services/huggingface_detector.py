@@ -1,6 +1,7 @@
 """
 Hugging Face Inference API for Plant Disease Detection
 Uses free Hugging Face models - no API key required!
+Supports both PlantVillage crops AND African crops (cassava, maize, etc.)
 """
 import requests
 import logging
@@ -10,34 +11,49 @@ logger = logging.getLogger(__name__)
 class HuggingFaceDetector:
     """Plant disease detection using Hugging Face Inference API"""
     
-    # Best free model for plant disease detection
-    MODEL = "linkanjarad/mobilenet_v2_1.00_224-plant-disease-identification"
-    
-    # PlantVillage 38 disease classes
-    CLASS_NAMES = [
-        'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
-        'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy',
-        'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot', 'Corn_(maize)___Common_rust_',
-        'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 'Grape___Black_rot',
-        'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy',
-        'Orange___Haunglongbing_(Citrus_greening)', 'Peach___Bacterial_spot', 'Peach___healthy',
-        'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 'Potato___Early_blight',
-        'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Soybean___healthy',
-        'Squash___Powdery_mildew', 'Strawberry___Leaf_scab', 'Strawberry___healthy',
-        'Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight',
-        'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot',
-        'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot',
-        'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy'
-    ]
+    # Multiple models for different crop types
+    MODELS = {
+        'african_crops': "swaggerlish/farmguard-ai-multi-crops-disease",  # Cassava, Maize, Pepper, Tomato
+        'cassava_specific': "nexusbert/resnet50-cassava-finetuned",  # Cassava only (5 diseases)
+        'plantvillage': "linkanjarad/mobilenet_v2_1.00_224-plant-disease-identification",  # 38 classes
+    }
     
     def __init__(self):
         """Initialize the Hugging Face detector"""
-        self.api_url = f"https://api-inference.huggingface.co/models/{self.MODEL}"
+        # Try African crops model first (includes cassava!)
+        self.primary_model = self.MODELS['african_crops']
+        self.fallback_model = self.MODELS['plantvillage']
         
     def predict(self, image_path):
         """Predict disease using Hugging Face Inference API"""
         try:
-            logger.info(f"Using Hugging Face model: {self.MODEL}")
+            # Try primary model (African crops including cassava)
+            logger.info(f"Trying primary model: {self.primary_model}")
+            result = self._try_model(self.primary_model, image_path)
+            
+            if result:
+                logger.info("✓ Primary model (African crops) succeeded")
+                return result
+            
+            # Fallback to PlantVillage model
+            logger.info(f"Trying fallback model: {self.fallback_model}")
+            result = self._try_model(self.fallback_model, image_path)
+            
+            if result:
+                logger.info("✓ Fallback model (PlantVillage) succeeded")
+                return result
+            
+            logger.error("All Hugging Face models failed")
+            return None
+                
+        except Exception as e:
+            logger.error(f"Error in Hugging Face prediction: {e}")
+            return None
+    
+    def _try_model(self, model_name, image_path):
+        """Try a specific model"""
+        try:
+            api_url = f"https://api-inference.huggingface.co/models/{model_name}"
             
             # Read image file
             with open(image_path, 'rb') as f:
@@ -45,7 +61,7 @@ class HuggingFaceDetector:
             
             # Make request to Hugging Face Inference API (FREE - no API key needed!)
             response = requests.post(
-                self.api_url,
+                api_url,
                 headers={"Content-Type": "application/octet-stream"},
                 data=image_data,
                 timeout=30
@@ -53,17 +69,16 @@ class HuggingFaceDetector:
             
             if response.status_code == 200:
                 predictions = response.json()
-                logger.info("✓ Hugging Face prediction successful")
                 return self._parse_predictions(predictions)
             elif response.status_code == 503:
-                logger.warning("Model is loading, please try again in a moment")
+                logger.warning(f"Model {model_name} is loading...")
                 return None
             else:
-                logger.error(f"Hugging Face API returned {response.status_code}: {response.text}")
+                logger.warning(f"Model {model_name} returned {response.status_code}")
                 return None
                 
         except Exception as e:
-            logger.error(f"Error in Hugging Face prediction: {e}")
+            logger.error(f"Error with model {model_name}: {e}")
             return None
     
     def _parse_predictions(self, predictions):
@@ -80,8 +95,15 @@ class HuggingFaceDetector:
                 label = pred['label']
                 confidence = pred['score'] * 100
                 
-                # Parse label
-                parts = label.split('___')
+                # Parse label (handles both formats: "Crop___Disease" and "Crop_Disease")
+                if '___' in label:
+                    parts = label.split('___')
+                elif '_' in label:
+                    # For African crops model format
+                    parts = label.split('_', 1)
+                else:
+                    parts = [label]
+                
                 crop = parts[0].replace('_', ' ') if len(parts) > 0 else 'Unknown'
                 disease = parts[1].replace('_', ' ') if len(parts) > 1 else 'Unknown'
                 
