@@ -127,13 +127,13 @@ class HybridDiseaseDetector:
     def _detect_disease_ml(self, image_path, crop_info):
         """Detect disease using local ML model"""
         try:
-            current_app.logger.info("Using ML model for disease detection...")
+            current_app.logger.info("Attempting ML model detection...")
             
             # Use ML detector
             ml_result = ml_detector.detect_disease(image_path)
             
             if not ml_result or not ml_result.get('success'):
-                current_app.logger.warning("ML detection failed")
+                current_app.logger.warning("ML detection not available - model not loaded")
                 return None
             
             # Format result to match pipeline format

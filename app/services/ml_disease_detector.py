@@ -1,14 +1,15 @@
 """
 Machine Learning-based Disease Detection using PlantVillage Model
-Uses a pre-trained EfficientNetB4 model from Hugging Face
+Uses MobileNetV2 for lightweight inference
 """
 import os
 import numpy as np
 from PIL import Image
-import tensorflow as tf
-from tensorflow import keras
-import requests
-from pathlib import Path
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class MLDiseaseDetector:
     """ML-based disease detection using PlantVillage trained model"""
@@ -58,50 +59,42 @@ class MLDiseaseDetector:
     def __init__(self):
         """Initialize the ML detector"""
         self.model = None
-        self.model_path = Path('models/plant_disease_model.h5')
-        self.input_size = (224, 224)  # Standard size for most models
+        self.model_loaded = False
+        self.tf_available = False
         
-    def download_model(self):
-        """Download pre-trained model from Hugging Face"""
+        # Try to import TensorFlow
         try:
-            # Create models directory
-            self.model_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Download model from Hugging Face
-            model_url = "https://huggingface.co/liriope/PlantDiseaseDetection/resolve/main/plant_disease_efficientnetb4.h5"
-            
-            print(f"Downloading model from {model_url}...")
-            response = requests.get(model_url, stream=True, timeout=300)
-            response.raise_for_status()
-            
-            with open(self.model_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            
-            print(f"Model downloaded successfully to {self.model_path}")
-            return True
-            
-        except Exception as e:
-            print(f"Error downloading model: {e}")
-            return False
-    
+            import tensorflow as tf
+            self.tf = tf
+            self.tf_available = True
+            logger.info("TensorFlow is available")
+        except ImportError:
+            logger.warning("TensorFlow not available - ML detection disabled")
+            self.tf_available = False
+        
     def load_model(self):
         """Load the pre-trained model"""
-        try:
-            # Check if model exists, if not download it
-            if not self.model_path.exists():
-                print("Model not found locally. Downloading...")
-                if not self.download_model():
-                    raise Exception("Failed to download model")
+        if not self.tf_available:
+            logger.error("TensorFlow not available")
+            return False
             
-            # Load model
-            print(f"Loading model from {self.model_path}...")
-            self.model = keras.models.load_model(self.model_path)
-            print("Model loaded successfully!")
+        try:
+            from pathlib import Path
+            model_path = Path('models/plant_disease_model.h5')
+            
+            if not model_path.exists():
+                logger.warning(f"Model file not found at {model_path}")
+                return False
+            
+            logger.info(f"Loading model from {model_path}...")
+            self.model = self.tf.keras.models.load_model(str(model_path))
+            self.model_loaded = True
+            logger.info("Model loaded successfully!")
             return True
             
         except Exception as e:
-            print(f"Error loading model: {e}")
+            logger.error(f"Error loading model: {e}")
+            self.model_loaded = False
             return False
     
     def preprocess_image(self, image_path):
@@ -110,8 +103,8 @@ class MLDiseaseDetector:
             # Load image
             img = Image.open(image_path).convert('RGB')
             
-            # Resize to model input size
-            img = img.resize(self.input_size)
+            # Resize to 224x224
+            img = img.resize((224, 224))
             
             # Convert to array and normalize
             img_array = np.array(img)
@@ -123,14 +116,18 @@ class MLDiseaseDetector:
             return img_array
             
         except Exception as e:
-            print(f"Error preprocessing image: {e}")
+            logger.error(f"Error preprocessing image: {e}")
             return None
     
     def predict(self, image_path):
         """Predict disease from image"""
+        if not self.tf_available:
+            logger.warning("TensorFlow not available")
+            return None
+            
         try:
             # Load model if not loaded
-            if self.model is None:
+            if not self.model_loaded:
                 if not self.load_model():
                     return None
             
@@ -165,7 +162,7 @@ class MLDiseaseDetector:
             return results
             
         except Exception as e:
-            print(f"Error making prediction: {e}")
+            logger.error(f"Error making prediction: {e}")
             return None
     
     def detect_disease(self, image_path):
@@ -175,7 +172,7 @@ class MLDiseaseDetector:
         if not predictions:
             return {
                 'success': False,
-                'error': 'Failed to analyze image'
+                'error': 'ML model not available'
             }
         
         # Get top prediction
