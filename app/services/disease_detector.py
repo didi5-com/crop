@@ -1,5 +1,5 @@
 """
-Hybrid disease detection pipeline with multi-stage validation
+Hybrid disease detection pipeline with ML model and multi-stage validation
 """
 import requests
 import base64
@@ -8,6 +8,7 @@ from app.services.image_validator import ImageValidator
 from app.services.crop_identifier import CropIdentifier
 from app.services.confidence_filter import ConfidenceFilter
 from app.services.recommendation_engine import RecommendationEngine
+from app.services.ml_disease_detector import ml_detector
 
 
 class HybridDiseaseDetector:
@@ -67,12 +68,16 @@ class HybridDiseaseDetector:
             f"(Confidence: {crop_result['confidence']}%)"
         )
         
-        # STAGE 3: Disease Detection
-        current_app.logger.info("Stage 3: Detecting disease...")
-        disease_result = self._detect_disease_api(image_path, crop_result)
+        # STAGE 3: Disease Detection (ML Model)
+        current_app.logger.info("Stage 3: Detecting disease using ML model...")
+        disease_result = self._detect_disease_ml(image_path, crop_result)
         
         if not disease_result:
-            current_app.logger.error("Disease detection failed")
+            current_app.logger.warning("ML detection failed, trying API fallback...")
+            disease_result = self._detect_disease_api(image_path, crop_result)
+        
+        if not disease_result:
+            current_app.logger.error("All detection methods failed")
             return self._create_fallback_response(crop_result)
         
         current_app.logger.info(
@@ -118,6 +123,59 @@ class HybridDiseaseDetector:
         current_app.logger.info("="*60)
         
         return filtered_result
+    
+    def _detect_disease_ml(self, image_path, crop_info):
+        """Detect disease using local ML model"""
+        try:
+            current_app.logger.info("Using ML model for disease detection...")
+            
+            # Use ML detector
+            ml_result = ml_detector.detect_disease(image_path)
+            
+            if not ml_result or not ml_result.get('success'):
+                current_app.logger.warning("ML detection failed")
+                return None
+            
+            # Format result to match pipeline format
+            disease_name = ml_result['disease']
+            crop_name = ml_result['crop']
+            confidence = ml_result['confidence']
+            is_healthy = ml_result['is_healthy']
+            
+            current_app.logger.info(
+                f"ML Model Result: {crop_name} - {disease_name} ({confidence:.2f}%)"
+            )
+            
+            # Create formatted response
+            if is_healthy:
+                return {
+                    'crop_name': crop_name,
+                    'disease_name': 'No Disease Detected - Healthy Plant',
+                    'confidence': round(confidence, 2),
+                    'symptoms': 'Plant appears healthy with no visible signs of disease',
+                    'causes': 'N/A - Plant is healthy',
+                    'treatment': 'No treatment needed. Continue current care practices.',
+                    'prevention': 'Maintain good agricultural practices and regular monitoring',
+                    'fertilizers': 'Use balanced NPK fertilizer as per crop requirements',
+                    'api_source': 'ml_model'
+                }
+            else:
+                return {
+                    'crop_name': crop_name,
+                    'disease_name': disease_name,
+                    'confidence': round(confidence, 2),
+                    'symptoms': f'{disease_name} detected on {crop_name} leaves',
+                    'causes': 'Fungal/bacterial/viral infection - specific cause varies by disease',
+                    'treatment': 'Treatment recommendations will be generated based on disease type',
+                    'prevention': 'Crop rotation | Proper spacing | Disease-resistant varieties',
+                    'fertilizers': 'Balanced NPK fertilizer | Organic amendments',
+                    'api_source': 'ml_model',
+                    'all_predictions': ml_result.get('all_predictions', [])
+                }
+        
+        except Exception as e:
+            current_app.logger.error(f"ML detection error: {str(e)}")
+            return None
     
     def _detect_disease_api(self, image_path, crop_info):
         """Detect disease using Plant.id API"""
