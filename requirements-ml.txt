@@ -1,0 +1,4 @@
+# Optional ML dependencies
+# Only install if you want local ML model support
+# Requires Python 3.9-3.12 (not 3.14+)
+tensorflow>=2.15.0,<2.18.0
