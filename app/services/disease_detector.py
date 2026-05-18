@@ -9,6 +9,7 @@ from app.services.crop_identifier import CropIdentifier
 from app.services.confidence_filter import ConfidenceFilter
 from app.services.recommendation_engine import RecommendationEngine
 from app.services.ml_disease_detector import ml_detector
+from app.services.huggingface_detector import hf_detector
 
 
 class HybridDiseaseDetector:
@@ -68,9 +69,13 @@ class HybridDiseaseDetector:
             f"(Confidence: {crop_result['confidence']}%)"
         )
         
-        # STAGE 3: Disease Detection (ML Model)
-        current_app.logger.info("Stage 3: Detecting disease using ML model...")
-        disease_result = self._detect_disease_ml(image_path, crop_result)
+        # STAGE 3: Disease Detection (Hugging Face Free API)
+        current_app.logger.info("Stage 3: Detecting disease using Hugging Face...")
+        disease_result = self._detect_disease_huggingface(image_path, crop_result)
+        
+        if not disease_result:
+            current_app.logger.warning("Hugging Face detection failed, trying local ML...")
+            disease_result = self._detect_disease_ml(image_path, crop_result)
         
         if not disease_result:
             current_app.logger.warning("ML detection failed, trying API fallback...")
@@ -123,6 +128,59 @@ class HybridDiseaseDetector:
         current_app.logger.info("="*60)
         
         return filtered_result
+    
+    def _detect_disease_huggingface(self, image_path, crop_info):
+        """Detect disease using Hugging Face Inference API (FREE!)"""
+        try:
+            current_app.logger.info("Using Hugging Face Inference API (free)...")
+            
+            # Use Hugging Face detector
+            hf_result = hf_detector.detect_disease(image_path)
+            
+            if not hf_result or not hf_result.get('success'):
+                current_app.logger.warning("Hugging Face detection not available")
+                return None
+            
+            # Format result to match pipeline format
+            disease_name = hf_result['disease']
+            crop_name = hf_result['crop']
+            confidence = hf_result['confidence']
+            is_healthy = hf_result['is_healthy']
+            
+            current_app.logger.info(
+                f"Hugging Face Result: {crop_name} - {disease_name} ({confidence:.2f}%)"
+            )
+            
+            # Create formatted response
+            if is_healthy:
+                return {
+                    'crop_name': crop_name,
+                    'disease_name': 'No Disease Detected - Healthy Plant',
+                    'confidence': round(confidence, 2),
+                    'symptoms': 'Plant appears healthy with no visible signs of disease',
+                    'causes': 'N/A - Plant is healthy',
+                    'treatment': 'No treatment needed. Continue current care practices.',
+                    'prevention': 'Maintain good agricultural practices and regular monitoring',
+                    'fertilizers': 'Use balanced NPK fertilizer as per crop requirements',
+                    'api_source': 'huggingface'
+                }
+            else:
+                return {
+                    'crop_name': crop_name,
+                    'disease_name': disease_name,
+                    'confidence': round(confidence, 2),
+                    'symptoms': f'{disease_name} detected on {crop_name} leaves',
+                    'causes': 'Fungal/bacterial/viral infection - specific cause varies by disease',
+                    'treatment': 'Treatment recommendations will be generated based on disease type',
+                    'prevention': 'Crop rotation | Proper spacing | Disease-resistant varieties',
+                    'fertilizers': 'Balanced NPK fertilizer | Organic amendments',
+                    'api_source': 'huggingface',
+                    'all_predictions': hf_result.get('all_predictions', [])
+                }
+        
+        except Exception as e:
+            current_app.logger.error(f"Hugging Face detection error: {str(e)}")
+            return None
     
     def _detect_disease_ml(self, image_path, crop_info):
         """Detect disease using local ML model"""
