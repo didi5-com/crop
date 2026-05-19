@@ -10,6 +10,7 @@ from app.services.confidence_filter import ConfidenceFilter
 from app.services.recommendation_engine import RecommendationEngine
 from app.services.ml_disease_detector import ml_detector
 from app.services.huggingface_detector import hf_detector
+from app.services.simple_detector import simple_detector
 
 
 class HybridDiseaseDetector:
@@ -69,18 +70,29 @@ class HybridDiseaseDetector:
             f"(Confidence: {crop_result['confidence']}%)"
         )
         
-        # STAGE 3: Disease Detection (Hugging Face Free API)
-        current_app.logger.info("Stage 3: Detecting disease using Hugging Face...")
+        # STAGE 3: Disease Detection (Multiple methods with fallback)
+        current_app.logger.info("Stage 3: Detecting disease...")
+        
+        # Try 1: Hugging Face (Free API)
+        current_app.logger.info("Trying Hugging Face detection...")
         disease_result = self._detect_disease_huggingface(image_path, crop_result)
         
+        # Try 2: Local ML Model
         if not disease_result:
-            current_app.logger.warning("Hugging Face detection failed, trying local ML...")
+            current_app.logger.warning("Hugging Face failed, trying local ML...")
             disease_result = self._detect_disease_ml(image_path, crop_result)
         
+        # Try 3: Simple Image Analysis (Manual Detection)
         if not disease_result:
-            current_app.logger.warning("ML detection failed, trying API fallback...")
+            current_app.logger.warning("ML failed, trying simple image analysis...")
+            disease_result = self._detect_disease_simple(image_path, crop_result)
+        
+        # Try 4: Plant.id API
+        if not disease_result:
+            current_app.logger.warning("Simple detection failed, trying Plant.id API...")
             disease_result = self._detect_disease_api(image_path, crop_result)
         
+        # Final fallback
         if not disease_result:
             current_app.logger.error("All detection methods failed")
             return self._create_fallback_response(crop_result)
@@ -180,6 +192,58 @@ class HybridDiseaseDetector:
         
         except Exception as e:
             current_app.logger.error(f"Hugging Face detection error: {str(e)}")
+            return None
+    
+    def _detect_disease_simple(self, image_path, crop_info):
+        """Detect disease using simple image analysis"""
+        try:
+            current_app.logger.info("Using simple image analysis (manual detection)...")
+            
+            # Use simple detector
+            simple_result = simple_detector.detect_disease(image_path)
+            
+            if not simple_result or not simple_result.get('success'):
+                current_app.logger.warning("Simple detection not available")
+                return None
+            
+            # Format result to match pipeline format
+            disease_name = simple_result['disease']
+            crop_name = simple_result['crop']
+            confidence = simple_result['confidence']
+            is_healthy = simple_result['is_healthy']
+            
+            current_app.logger.info(
+                f"Simple Detector Result: {crop_name} - {disease_name} ({confidence:.2f}%)"
+            )
+            
+            # Create formatted response
+            if is_healthy:
+                return {
+                    'crop_name': crop_name,
+                    'disease_name': 'No Disease Detected - Healthy Plant',
+                    'confidence': round(confidence, 2),
+                    'symptoms': simple_result.get('symptoms', 'Plant appears healthy with no visible signs of disease'),
+                    'causes': simple_result.get('causes', 'N/A - Plant is healthy'),
+                    'treatment': simple_result.get('treatment', 'No treatment needed. Continue current care practices.'),
+                    'prevention': simple_result.get('prevention', 'Maintain good agricultural practices and regular monitoring'),
+                    'fertilizers': simple_result.get('fertilizers', 'Use balanced NPK fertilizer as per crop requirements'),
+                    'api_source': 'simple_detector'
+                }
+            else:
+                return {
+                    'crop_name': crop_name,
+                    'disease_name': disease_name,
+                    'confidence': round(confidence, 2),
+                    'symptoms': simple_result.get('symptoms', f'{disease_name} detected on {crop_name} leaves'),
+                    'causes': simple_result.get('causes', 'Fungal/bacterial/viral infection - specific cause varies by disease'),
+                    'treatment': simple_result.get('treatment', 'Treatment recommendations will be generated based on disease type'),
+                    'prevention': simple_result.get('prevention', 'Crop rotation | Proper spacing | Disease-resistant varieties'),
+                    'fertilizers': simple_result.get('fertilizers', 'Balanced NPK fertilizer | Organic amendments'),
+                    'api_source': 'simple_detector'
+                }
+        
+        except Exception as e:
+            current_app.logger.error(f"Simple detection error: {str(e)}")
             return None
     
     def _detect_disease_ml(self, image_path, crop_info):
