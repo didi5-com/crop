@@ -1,47 +1,50 @@
 """
 Hugging Face Inference API for Plant Disease Detection
 Uses free Hugging Face models - no API key required!
-Supports both PlantVillage crops AND African crops (cassava, maize, etc.)
+Uses PROVEN working models with high accuracy
 """
 import requests
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
 class HuggingFaceDetector:
     """Plant disease detection using Hugging Face Inference API"""
     
-    # Multiple models for different crop types
+    # PROVEN working models from Hugging Face
     MODELS = {
-        'african_crops': "swaggerlish/farmguard-ai-multi-crops-disease",  # Cassava, Maize, Pepper, Tomato
-        'cassava_specific': "nexusbert/resnet50-cassava-finetuned",  # Cassava only (5 diseases)
-        'plantvillage': "linkanjarad/mobilenet_v2_1.00_224-plant-disease-identification",  # 38 classes
+        'primary': "mesabo/agri-plant-disease-resnet50",  # ResNet50 - High accuracy
+        'mobilenet': "Daksh159/plant-disease-mobilenetv2",  # MobileNetV2 - 38 classes
+        'inception': "kero2111/Plant_Disease",  # InceptionResNetV2 - 38 classes
+        'efficientnet': "eymenslimani/plant-disease-detector",  # EfficientNet - 79.86% accuracy
+        'vit': "wambugu71/crop_leaf_diseases_vit",  # Vision Transformer - Corn, Potato, Rice, Wheat
     }
     
     def __init__(self):
         """Initialize the Hugging Face detector"""
-        # Try African crops model first (includes cassava!)
-        self.primary_model = self.MODELS['african_crops']
-        self.fallback_model = self.MODELS['plantvillage']
+        # Use proven models in priority order
+        self.model_priority = [
+            self.MODELS['primary'],
+            self.MODELS['mobilenet'],
+            self.MODELS['inception'],
+            self.MODELS['efficientnet'],
+        ]
         
     def predict(self, image_path):
         """Predict disease using Hugging Face Inference API"""
         try:
-            # Try primary model (African crops including cassava)
-            logger.info(f"Trying primary model: {self.primary_model}")
-            result = self._try_model(self.primary_model, image_path)
-            
-            if result:
-                logger.info("✓ Primary model (African crops) succeeded")
-                return result
-            
-            # Fallback to PlantVillage model
-            logger.info(f"Trying fallback model: {self.fallback_model}")
-            result = self._try_model(self.fallback_model, image_path)
-            
-            if result:
-                logger.info("✓ Fallback model (PlantVillage) succeeded")
-                return result
+            # Try each model in priority order
+            for model_name in self.model_priority:
+                logger.info(f"Trying model: {model_name}")
+                result = self._try_model(model_name, image_path)
+                
+                if result:
+                    logger.info(f"✓ Model {model_name} succeeded")
+                    return result
+                
+                # Wait a bit before trying next model
+                time.sleep(1)
             
             logger.error("All Hugging Face models failed")
             return None
@@ -69,12 +72,24 @@ class HuggingFaceDetector:
             
             if response.status_code == 200:
                 predictions = response.json()
+                logger.info(f"Model response: {predictions[:2] if isinstance(predictions, list) else predictions}")
                 return self._parse_predictions(predictions)
             elif response.status_code == 503:
-                logger.warning(f"Model {model_name} is loading...")
+                logger.warning(f"Model {model_name} is loading, waiting...")
+                # Model is loading, wait and retry once
+                time.sleep(10)
+                response = requests.post(
+                    api_url,
+                    headers={"Content-Type": "application/octet-stream"},
+                    data=image_data,
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    predictions = response.json()
+                    return self._parse_predictions(predictions)
                 return None
             else:
-                logger.warning(f"Model {model_name} returned {response.status_code}")
+                logger.warning(f"Model {model_name} returned {response.status_code}: {response.text[:200]}")
                 return None
                 
         except Exception as e:
@@ -87,33 +102,62 @@ class HuggingFaceDetector:
             if not predictions or len(predictions) == 0:
                 return None
             
-            # Get top 3 predictions
-            top_predictions = sorted(predictions, key=lambda x: x['score'], reverse=True)[:3]
+            # Get top 5 predictions for better accuracy
+            top_predictions = sorted(predictions, key=lambda x: x['score'], reverse=True)[:5]
             
             results = []
             for pred in top_predictions:
                 label = pred['label']
                 confidence = pred['score'] * 100
                 
-                # Parse label (handles both formats: "Crop___Disease" and "Crop_Disease")
-                if '___' in label:
-                    parts = label.split('___')
-                elif '_' in label:
-                    # For African crops model format
-                    parts = label.split('_', 1)
-                else:
-                    parts = [label]
+                # Parse label - handles multiple formats
+                # Format 1: "Crop___Disease" (PlantVillage format)
+                # Format 2: "Crop_Disease" 
+                # Format 3: "Disease"
                 
-                crop = parts[0].replace('_', ' ') if len(parts) > 0 else 'Unknown'
-                disease = parts[1].replace('_', ' ') if len(parts) > 1 else 'Unknown'
+                crop = "Unknown"
+                disease = label
+                
+                if '___' in label:
+                    # PlantVillage format: "Tomato___Early_blight"
+                    parts = label.split('___')
+                    crop = parts[0].replace('_', ' ').strip()
+                    disease = parts[1].replace('_', ' ').strip() if len(parts) > 1 else label
+                elif '__' in label:
+                    # Alternative format: "Tomato__Early_blight"
+                    parts = label.split('__')
+                    crop = parts[0].replace('_', ' ').strip()
+                    disease = parts[1].replace('_', ' ').strip() if len(parts) > 1 else label
+                else:
+                    # Try to extract crop from disease name
+                    # Common patterns: "Tomato Early blight", "Potato Late blight"
+                    words = label.replace('_', ' ').split()
+                    if len(words) > 1:
+                        # First word might be crop
+                        potential_crops = ['tomato', 'potato', 'corn', 'maize', 'pepper', 'cassava', 
+                                         'rice', 'wheat', 'apple', 'grape', 'cherry', 'peach', 
+                                         'strawberry', 'bell', 'soybean']
+                        first_word = words[0].lower()
+                        if first_word in potential_crops:
+                            crop = words[0]
+                            disease = ' '.join(words[1:])
+                        else:
+                            disease = label.replace('_', ' ')
+                    else:
+                        disease = label.replace('_', ' ')
+                
+                # Check if healthy
+                is_healthy = any(word in disease.lower() for word in ['healthy', 'normal', 'good'])
                 
                 results.append({
-                    'crop': crop,
-                    'disease': disease,
-                    'confidence': confidence,
-                    'is_healthy': 'healthy' in disease.lower()
+                    'crop': crop.title(),
+                    'disease': disease.title(),
+                    'confidence': round(confidence, 2),
+                    'is_healthy': is_healthy,
+                    'raw_label': label
                 })
             
+            logger.info(f"Parsed {len(results)} predictions")
             return results
             
         except Exception as e:

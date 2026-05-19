@@ -102,3 +102,7 @@ def make_shell_context():
     from app.models.scan import Scan
     from app.models.disease import Disease
     return {'db': db, 'User': User, 'Scan': Scan, 'Disease': Disease}
+
+if __name__ == '__main__':
+    # Run the Flask development server
+    app.run(debug=True, host='0.0.0.0', port=5000)

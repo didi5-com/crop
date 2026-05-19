@@ -70,26 +70,16 @@ class HybridDiseaseDetector:
             f"(Confidence: {crop_result['confidence']}%)"
         )
         
-        # STAGE 3: Disease Detection (Multiple methods with fallback)
-        current_app.logger.info("Stage 3: Detecting disease...")
+        # STAGE 3: Disease Detection (Hugging Face API - PRIMARY METHOD)
+        current_app.logger.info("Stage 3: Detecting disease using Hugging Face API...")
         
-        # Try 1: Hugging Face (Free API)
-        current_app.logger.info("Trying Hugging Face detection...")
+        # Try 1: Hugging Face (BEST METHOD - Use proven models)
+        current_app.logger.info("Using Hugging Face Inference API...")
         disease_result = self._detect_disease_huggingface(image_path, crop_result)
         
-        # Try 2: Local ML Model
+        # Try 2: Plant.id API (if Hugging Face fails)
         if not disease_result:
-            current_app.logger.warning("Hugging Face failed, trying local ML...")
-            disease_result = self._detect_disease_ml(image_path, crop_result)
-        
-        # Try 3: Simple Image Analysis (Manual Detection)
-        if not disease_result:
-            current_app.logger.warning("ML failed, trying simple image analysis...")
-            disease_result = self._detect_disease_simple(image_path, crop_result)
-        
-        # Try 4: Plant.id API
-        if not disease_result:
-            current_app.logger.warning("Simple detection failed, trying Plant.id API...")
+            current_app.logger.warning("Hugging Face failed, trying Plant.id API...")
             disease_result = self._detect_disease_api(image_path, crop_result)
         
         # Final fallback
@@ -144,7 +134,7 @@ class HybridDiseaseDetector:
     def _detect_disease_huggingface(self, image_path, crop_info):
         """Detect disease using Hugging Face Inference API (FREE!)"""
         try:
-            current_app.logger.info("Using Hugging Face Inference API (free)...")
+            current_app.logger.info("Using Hugging Face Inference API (free, proven models)...")
             
             # Use Hugging Face detector
             hf_result = hf_detector.detect_disease(image_path)
@@ -163,17 +153,37 @@ class HybridDiseaseDetector:
                 f"Hugging Face Result: {crop_name} - {disease_name} ({confidence:.2f}%)"
             )
             
+            # Try to get detailed info from our database
+            from app.data.crop_disease_database import get_disease_info, CROP_DISEASES
+            
+            # Normalize names for database lookup
+            crop_key = crop_name.lower().replace(' ', '_')
+            disease_key = disease_name.lower().replace(' ', '_')
+            
+            # Try to find in database
+            disease_info = None
+            if crop_key in CROP_DISEASES:
+                # Try exact match first
+                if disease_key in CROP_DISEASES[crop_key]:
+                    disease_info = CROP_DISEASES[crop_key][disease_key]
+                else:
+                    # Try partial match
+                    for key, info in CROP_DISEASES[crop_key].items():
+                        if disease_key in key or key in disease_key:
+                            disease_info = info
+                            break
+            
             # Create formatted response
             if is_healthy:
                 return {
                     'crop_name': crop_name,
                     'disease_name': 'No Disease Detected - Healthy Plant',
                     'confidence': round(confidence, 2),
-                    'symptoms': 'Plant appears healthy with no visible signs of disease',
-                    'causes': 'N/A - Plant is healthy',
-                    'treatment': 'No treatment needed. Continue current care practices.',
-                    'prevention': 'Maintain good agricultural practices and regular monitoring',
-                    'fertilizers': 'Use balanced NPK fertilizer as per crop requirements',
+                    'symptoms': disease_info['symptoms'] if disease_info else 'Plant appears healthy with no visible signs of disease',
+                    'causes': disease_info['causes'] if disease_info else 'N/A - Plant is healthy',
+                    'treatment': disease_info['treatment'] if disease_info else 'No treatment needed. Continue current care practices.',
+                    'prevention': disease_info['prevention'] if disease_info else 'Maintain good agricultural practices and regular monitoring',
+                    'fertilizers': disease_info['fertilizers'] if disease_info else 'Use balanced NPK fertilizer as per crop requirements',
                     'api_source': 'huggingface'
                 }
             else:
@@ -181,11 +191,11 @@ class HybridDiseaseDetector:
                     'crop_name': crop_name,
                     'disease_name': disease_name,
                     'confidence': round(confidence, 2),
-                    'symptoms': f'{disease_name} detected on {crop_name} leaves',
-                    'causes': 'Fungal/bacterial/viral infection - specific cause varies by disease',
-                    'treatment': 'Treatment recommendations will be generated based on disease type',
-                    'prevention': 'Crop rotation | Proper spacing | Disease-resistant varieties',
-                    'fertilizers': 'Balanced NPK fertilizer | Organic amendments',
+                    'symptoms': disease_info['symptoms'] if disease_info else f'{disease_name} detected on {crop_name} leaves',
+                    'causes': disease_info['causes'] if disease_info else 'Fungal/bacterial/viral infection - specific cause varies by disease',
+                    'treatment': disease_info['treatment'] if disease_info else 'Consult agricultural expert for specific treatment recommendations',
+                    'prevention': disease_info['prevention'] if disease_info else 'Crop rotation | Proper spacing | Disease-resistant varieties',
+                    'fertilizers': disease_info['fertilizers'] if disease_info else 'Balanced NPK fertilizer | Organic amendments',
                     'api_source': 'huggingface',
                     'all_predictions': hf_result.get('all_predictions', [])
                 }
