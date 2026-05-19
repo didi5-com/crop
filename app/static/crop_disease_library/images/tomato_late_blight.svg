@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500">
+  <rect width="100%" height="100%" fill="#eef7ea"/>
+  <rect x="20" y="20" width="760" height="460" fill="#ffffff" stroke="#2f6b2f" stroke-width="4"/>
+  <text x="40" y="80" font-size="36" font-family="Arial" fill="#1d4d1d">Tomato - Late Blight</text>
+  <text x="40" y="140" font-size="24" font-family="Arial" fill="#333">Pathogen: Phytophthora infestans</text>
+  <text x="40" y="200" font-size="22" font-family="Arial" fill="#444">Symptoms:</text>
+  <text x="60" y="245" font-size="20" font-family="Arial" fill="#555">• Dark water-soaked leaf lesions; Rapid browning and collapse</text>
+  <text x="40" y="450" font-size="18" font-family="Arial" fill="#777">Reference placeholder image for indication dataset.</text>
+</svg>

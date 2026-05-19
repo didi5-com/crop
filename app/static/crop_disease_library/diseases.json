@@ -1,0 +1,74 @@
+[
+  {
+    "id": "tomato_late_blight",
+    "crop": "Tomato",
+    "disease": "Late Blight",
+    "pathogen": "Phytophthora infestans",
+    "image": "images/tomato_late_blight.svg",
+    "symptoms": [
+      "Dark water-soaked leaf lesions",
+      "Rapid browning and collapse",
+      "White fuzzy growth under humid conditions"
+    ]
+  },
+  {
+    "id": "tomato_early_blight",
+    "crop": "Tomato",
+    "disease": "Early Blight",
+    "pathogen": "Alternaria solani",
+    "image": "images/tomato_early_blight.svg",
+    "symptoms": [
+      "Concentric ring lesions on older leaves",
+      "Yellowing around lesions",
+      "Premature defoliation"
+    ]
+  },
+  {
+    "id": "potato_early_blight",
+    "crop": "Potato",
+    "disease": "Early Blight",
+    "pathogen": "Alternaria solani",
+    "image": "images/potato_early_blight.svg",
+    "symptoms": [
+      "Target-like brown lesions",
+      "Leaf chlorosis",
+      "Lower leaf drop"
+    ]
+  },
+  {
+    "id": "corn_common_rust",
+    "crop": "Corn",
+    "disease": "Common Rust",
+    "pathogen": "Puccinia sorghi",
+    "image": "images/corn_common_rust.svg",
+    "symptoms": [
+      "Reddish-brown pustules on leaves",
+      "Powdery spores",
+      "Reduced photosynthesis"
+    ]
+  },
+  {
+    "id": "grape_black_rot",
+    "crop": "Grape",
+    "disease": "Black Rot",
+    "pathogen": "Guignardia bidwellii",
+    "image": "images/grape_black_rot.svg",
+    "symptoms": [
+      "Brown circular leaf spots",
+      "Black shriveled berries",
+      "Tiny black pycnidia"
+    ]
+  },
+  {
+    "id": "apple_scab",
+    "crop": "Apple",
+    "disease": "Apple Scab",
+    "pathogen": "Venturia inaequalis",
+    "image": "images/apple_scab.svg",
+    "symptoms": [
+      "Olive-green velvety spots",
+      "Cracked fruit lesions",
+      "Leaf distortion"
+    ]
+  }
+]
